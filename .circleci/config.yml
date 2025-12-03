@@ -3,7 +3,7 @@ version: 2.1
 executors:
   python-executor:
     docker:
-      - image: cimg/python:3.10  # You can adjust the Python version based on your requirements
+      - image: cimg/python:3.10  # CircleCI Python Docker image, you can choose another version if needed
     working_directory: ~/repo
 
 jobs:
@@ -12,8 +12,7 @@ jobs:
     steps:
       - checkout  # Checkout the repository
       - setup_remote_docker:
-          version: 20.10.7  # Optional: Set Docker version (if required for your environment)
-          docker_layer_caching: true  # Optional: Enable Docker layer caching for faster builds
+          docker_layer_caching: true  # Optional: Enables Docker layer caching for faster builds
       - run:
           name: Build and push Docker image for production
           command: |
@@ -27,8 +26,7 @@ jobs:
     steps:
       - checkout  # Checkout the repository
       - setup_remote_docker:
-          version: 20.10.7  # Optional: Set Docker version (if required for your environment)
-          docker_layer_caching: true  # Optional: Enable Docker layer caching for faster builds
+          docker_layer_caching: true  # Optional: Enables Docker layer caching for faster builds
       - run:
           name: Build and push Docker image for staging
           command: |
