@@ -1,31 +1,46 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/reference/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/guides/orchestrate/jobs-steps/#jobs-overview & https://circleci.com/docs/reference/configuration-reference/#jobs
-jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/guides/execution-managed/executor-intro/ & https://circleci.com/docs/reference/configuration-reference/#executor-job
+executors:
+  python-executor:
     docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:current
+      - image: cimg/python:3.10  # You can adjust the Python version based on your requirements
+    working_directory: ~/repo
 
-    # Add steps to the job
-    # See: https://circleci.com/docs/guides/orchestrate/jobs-steps/#steps-overview & https://circleci.com/docs/reference/configuration-reference/#steps
+jobs:
+  build_and_push_prod:
+    executor: python-executor
     steps:
-      # Checkout the code as the first step.
-      - checkout
+      - checkout  # Checkout the repository
+      - setup_remote_docker:
+          version: 20.10.7  # Optional: Set Docker version (if required for your environment)
+          docker_layer_caching: true  # Optional: Enable Docker layer caching for faster builds
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: Build and push Docker image for production
+          command: |
+            docker build -f Dockerfile.prod -t your-dockerhub-username/your-image-name:prod -t your-dockerhub-username/your-image-name:latest .
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            docker push your-dockerhub-username/your-image-name:prod
+            docker push your-dockerhub-username/your-image-name:latest
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/guides/orchestrate/workflows/ & https://circleci.com/docs/reference/configuration-reference/#workflows
+  build_and_push_staging:
+    executor: python-executor
+    steps:
+      - checkout  # Checkout the repository
+      - setup_remote_docker:
+          version: 20.10.7  # Optional: Set Docker version (if required for your environment)
+          docker_layer_caching: true  # Optional: Enable Docker layer caching for faster builds
+      - run:
+          name: Build and push Docker image for staging
+          command: |
+            docker build -f Dockerfile.staging -t your-dockerhub-username/your-image-name:staging .
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            docker push your-dockerhub-username/your-image-name:staging
+
 workflows:
-  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
+  version: 2
+  build_and_push:
     jobs:
-      - say-hello
+      - build_and_push_prod
+      - build_and_push_staging:
+          requires:
+            - build_and_push_prod
